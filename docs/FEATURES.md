@@ -1,6 +1,6 @@
 # Product feature catalogue
 
-Status: full product scope approved on 17 November 2026; implementation starts with the navigation foundation, while financial features remain planned. Source: `Expense_Tracker_Feature_Catalogue.docx`, version 1.0, 17 November 2026. This document preserves all thirteen catalogue areas and navigation. Engineering rules below clarify the requested behavior; detailed policies are documented in the architecture.
+Status: full product scope approved on 17 November 2026. The owner accepted Phase 3 functional workflows. Phase 4 parser, lifecycle, review/history and native capture code is implemented for development validation; new native compilation/security/background gates remain pending. See DEVELOPMENT.md and PHASE4_TESTING.md for evidence. Source: `Expense_Tracker_Feature_Catalogue.docx`, version 1.0, 17 November 2026. This document preserves all thirteen catalogue areas and navigation; a listed capability is not a claim of completion.
 
 Build a privacy-first, open-source Android application for individual personal finances. Initial banks are Bank of Ceylon (BoC), Sampath Bank, Hatton National Bank (HNB) and Commercial Bank of Ceylon. LKR is the default currency, with multiple currencies supported. No backend, registration, mandatory cloud services or shared household accounts.
 

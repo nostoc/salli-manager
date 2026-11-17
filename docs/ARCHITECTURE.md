@@ -4,6 +4,8 @@ Status: approved by the user on 17 November 2026. This is a design, not an imple
 
 ## System boundary and stack
 
+Implementation update: the owner accepted Phase 3 functional workflows. Phase 4 adds canonical transaction lifecycle/provenance, schema v2, four parser modules, review/history repositories and protected screens. `FinanceSmsModule` shares the existing local `finance-vault` Android library and native session with `FinanceVaultModule`; this avoids a circular native-module dependency. SMS encryption, receiver and WorkManager code require a native rebuild and device acceptance. See `DEVELOPMENT.md`, `PHASE4_PLAN.md` and `PHASE4_TESTING.md`; the rest of this document retains the complete product architecture.
+
 One Android app owns local data and processing. There is no backend, registration, remote inference, telemetry or mandatory cloud service. Releases bundle all application code and assets, omit INTERNET permission and disable remote updates. Development builds may use Metro; build-time downloads are distinct from offline runtime operation.
 
 Use React Native, strict TypeScript, Expo Router, NativeWind and Zustand. Use `expo-sqlite` compiled with SQLCipher, Android Keystore for key protection, and biometric/device authentication. Implement SMS capture and WorkManager coordination in a local Kotlin Expo module. Use Jest for TypeScript behavior, Android native tests for platform behavior and GitHub Actions for CI.
@@ -31,7 +33,7 @@ src/core/
   database/                 Encrypted connection, migrations, transactions
   security/                 Session and native key access boundary
 src/ui/                     Shared accessible UI primitives
-modules/finance-sms/         Kotlin receiver, encrypted inbox, WorkManager
+modules/finance-vault/       Kotlin vault/SMS Expo modules, session, inbox, WorkManager
 tests/fixtures/              Independently synthetic, reviewed inputs
 ```
 
@@ -60,7 +62,7 @@ Use stable local IDs, versioned schema migrations, foreign keys, uniqueness cons
 | Attachment | Encrypted private file reference and bounded metadata |
 | Recurrence, Obligation, Goal | Later reminders, forecasts and savings |
 
-Opening balances are explicit non-expense adjustments, not income. A bank/cash debit decreases an asset; a card purchase increases a liability. A repayment decreases both the paying asset and card liability. Store this convention centrally and test it. A card-only payment SMS may create one transfer with an unresolved external leg; later bank evidence completes that transfer rather than generating income or another expense. Unresolved legs must be visible and excluded from invented account balances.
+Opening balances are explicit non-expense adjustments, not income. A bank/cash debit decreases an asset; a posted card purchase increases a liability. A repayment decreases both the paying asset and card liability. Card-only payment SMS stays in review without financial effects until both accounts are known. Create one balanced transfer or attach evidence to an existing transfer; never invent an external payer or income.
 
 Balances calculated from the ledger and bank-reported balance observations remain distinct, each with an as-of time and confidence. Missing history means a calculated outstanding balance may be incomplete. Available credit in an authorization SMS is not a spending budget, opening balance or reliable proof of posted outstanding debt.
 
@@ -151,7 +153,7 @@ Reviewed official documentation and npm metadata on 17 November 2026. Documented
 | SecureStore / Keystore | SecureStore offers Keystore-backed encrypted values; authentication changes can invalidate access. Candidate for small secrets, but no assumption that Kotlin workers can use its internal storage format. Native key/session integration remains open. | [SecureStore](https://docs.expo.dev/versions/latest/sdk/securestore/), [Keystore](https://developer.android.com/privacy-and-security/keystore) |
 | Biometrics | expo-local-authentication provides an authentication prompt; UI authentication alone does not cryptographically gate the database key. Prove credential fallback and key authorization together. | [LocalAuthentication](https://docs.expo.dev/versions/latest/sdk/local-authentication/) |
 | Kotlin module | Local Expo modules are supported. Keep native code in the module and manifest/build changes in config plugins so prebuild does not erase them. | [Expo Modules API](https://docs.expo.dev/modules/get-started/) |
-| WorkManager | Native deferrable work with retries; not an exact scheduler or JS runtime. Select a stable AndroidX version compatible with the selected SDK's minSdk, Kotlin, AGP and JDK. | [Work requests](https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work) |
+| WorkManager | Pin work-runtime/work-testing 2.12.0, stable 23 September 2026, minSdk 24 (matches the app), compileSdk requirement 33+ (app 37). No work-analytics artifact. Native build/manifest/runtime integration remains pending. | [Release notes](https://developer.android.com/jetpack/androidx/releases/work), [Work requests](https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work) |
 | Jest | Use SDK-aligned jest-expo; Router tests use its testing library and current compatible React Native Testing Library. Native security needs separate Android tests. | [Jest](https://docs.expo.dev/develop/unit-testing/), [Router testing](https://docs.expo.dev/router/reference/testing/) |
 | Local releases / CI | Local Gradle releases are supported; EAS is optional. Audit merged permissions and pin CI actions/toolchains when CI is added. | [Local production builds](https://docs.expo.dev/guides/local-app-production/), [Expo permissions](https://docs.expo.dev/guides/permissions/) |
 

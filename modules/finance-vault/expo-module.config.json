@@ -1,0 +1,4 @@
+{
+  "platforms": ["android"],
+  "android": { "modules": ["org.sallimanager.vault.FinanceVaultModule", "org.sallimanager.vault.FinanceSmsModule"] }
+}

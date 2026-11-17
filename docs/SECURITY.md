@@ -16,6 +16,10 @@ Status: requirements and initial threat model approved on 17 November 2026. Thes
 
 ## Assets and trust boundaries
 
+Current development controls: SQLCipher verified before any schema access; authenticated Keystore AES-GCM key envelope in no-backup storage; isolated keyed connection without Expo database inspection; protected routes and transient cache clearing; serialized transactions rolled back on interrupted sessions; bound SQL parameters and validated financial reads. The owner confirmed the locked screen and authenticated unlock in the installed native app on one API 34 device; the full negative-key/cancellation probe suite is still pending. Full session/workflow, invalidation/recovery, other-device and offline-release checks remain open in `DEVELOPMENT.md`. These controls do not constitute a security audit or production-release approval.
+
+The Keystore key permits strong biometric/device credential authorization for five seconds; the application still requests a fresh prompt per unlock and enforces its own session boundary. The database key transiently crosses Expo SQLite's JS/native boundary, and JavaScript strings cannot guarantee memory zeroization. It is not stored in Zustand, navigation, preferences, files or logs. No financial content is registered with Expo SQLite devtools. Backup XML excludes standard legacy/cloud/device-transfer domains, and allowBackup is false; actual vendor and newer cross-platform transfer behavior still needs verification. See [Android backup rules](https://developer.android.com/identity/data/autobackup).
+
 Assets include account identities, transactions, balances, budgets, merchants, dates, notes, receipts, statements, savings plans, source metadata, categorization rules, encrypted backups, database keys and signing keys. Source identifiers/fingerprints and financial filenames can also reveal private information.
 
 Trust boundaries:
@@ -86,6 +90,22 @@ Use prepared statements/bound values for untrusted fields. If SQLCipher key setu
 Protect exported Android components, validate broadcast actions/permissions and use safe explicit pending intents where needed. Do not expose the inbox or ledger through a content provider. Keep data out of clipboard by default. Notifications contain generic text until an explicit user preference allows more detail. Screenshot protection should default on and remain configurable; document its limits.
 
 Google Play lists SMS-based money management as an exception requiring review; it is not blanket authorization. Android installer allowlisting is a separate condition. A denied permission must not prompt the app to seek broader unrelated access. [Play SMS policy](https://support.google.com/googleplay/android-developer/answer/10208820), [Android RECEIVE_SMS](https://developer.android.com/reference/android/Manifest.permission#RECEIVE_SMS).
+
+## Phase 4 implementation boundary
+
+The new Kotlin capture implementation is unverified on Android until PHASE4_TESTING.md passes. The receiver defaults disabled. Enabling capture requires native correct/wrong-key and tamper probes plus Keystore rejection after the SMS wrapping key's five-second authorization window, followed by RECEIVE_SMS consent. READ_SMS is requested separately for history. Manual finance needs neither.
+
+RSA-3072 OAEP explicitly uses SHA-256/MGF1-SHA-256; fresh AES-256-GCM keys encrypt each envelope. A separate authenticated Keystore AES key wraps the software RSA private key and correlation secret. Public/wrapped metadata is authenticated with a non-auth Keystore HMAC key, which cannot decrypt messages. Native session handles activate after database validation, are generation-bound and are invalidated on lock/background. Private RSA material never enters JS. [Android crypto guidance](https://developer.android.com/privacy-and-security/cryptography), [Keystore](https://developer.android.com/privacy-and-security/keystore).
+
+The software RSA private key is not a non-exportable hardware RSA key; its Keystore wrapping key is non-exportable. Lock releases native references and wipes owned secret arrays, while in-flight crypto/provider objects can retain references until completion/GC. Do not claim physical memory zeroization. The transient JS ledger-key limitation still applies.
+
+Known senders remain untrusted. Protected broadcasts require BROADCAST_SMS, matching action and explicit opt-in. Sanitization precedes persistence; JS revalidates decrypted inputs. OTPs/credentials are discarded and full identifier patterns reduced/redacted. The no-backup queue uses opaque keyed transport identities, bounded ciphertext and visible rejected/expired gap counts. Similar financial fields only suggest duplicates for review.
+
+WorkManager receives empty data and a generic work name. WAKE_LOCK finishes durable ciphertext housekeeping; RECEIVE_BOOT_COMPLETED reschedules it after reboot. Neither permits financial decryption. ACCESS_NETWORK_STATE and foreground-service permissions/service are removed; there are no network constraints. The updated release manifest guard still rejects INTERNET, but its new merged-manifest pass remains pending.
+
+Source text expires seven days after first intake, is removed on resolution and is not renewed by retries. Resolved replay text is not re-retained in SQLite. Structured observations/corrections remain encrypted. Device shutdown, deferred scheduling and wall-clock rollback can delay physical cleanup; no trusted offline wall clock is assumed. Capture before the first device unlock and after force-stop is not guaranteed.
+
+Unavailable/tampered SMS keys disable capture on detection; existing inbox keys are never replaced automatically. Manual finance can remain available. Debug-only fixed synthetic capture helpers need authenticated verified sessions and reject release calls. Their delayed capture is an in-process test, not durable background delivery. Full erasure/portable recovery remains later work; do not recommend data clearing/uninstall as repair.
 
 ## Backup deletion and vulnerability reporting
 

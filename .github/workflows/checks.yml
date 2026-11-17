@@ -1,0 +1,61 @@
+name: Checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  financial-and-typescript:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24.22.2'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run check:config
+      - run: npm run export:android
+
+  native-android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      EXPO_NO_TELEMETRY: '1'
+      APP_VARIANT: release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24.22.2'
+          cache: npm
+      - run: npm ci
+      - name: Select runner JDK 17
+        shell: bash
+        run: |
+          test -d "$JAVA_HOME_17_X64"
+          echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME_17_X64/bin" >> "$GITHUB_PATH"
+      - name: Install pinned Android build tools
+        run: sdkmanager "platforms;android-37" "build-tools;37.0.0" "ndk;27.1.12297006"
+      - run: npm run prebuild:release
+      - name: Compile native code and test SMS boundaries
+        working-directory: android
+        run: ./gradlew :finance-vault:testDebugUnitTest :app:compileReleaseKotlin :app:processReleaseManifest --no-daemon --console=plain -PreactNativeArchitectures=arm64-v8a
+      - run: npm run check:manifest -- android/app/build/intermediates/merged_manifests/release/processReleaseManifest/AndroidManifest.xml

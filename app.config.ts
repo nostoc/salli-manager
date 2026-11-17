@@ -25,6 +25,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         'android.permission.VIBRATE',
       ],
     },
-    plugins: ['expo-router'],
+    plugins: ['expo-router', ['expo-sqlite', { useSQLCipher: true, enableFTS: false }], './plugins/withPrivateBackup.cjs'],
   };
 };

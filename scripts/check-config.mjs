@@ -28,4 +28,6 @@ assert.deepEqual(config.android.permissions, []);
 assert.equal(config.android.package, 'org.sallimanager.app');
 assert.equal(config.runtimeVersion, undefined);
 assert.equal(config.updates.url, undefined);
+const sqlitePlugin = config.plugins.find((entry) => Array.isArray(entry) && entry[0] === 'expo-sqlite');
+assert.equal(sqlitePlugin?.[1]?.useSQLCipher, true, 'SQLCipher must be compiled into Android builds.');
 process.stdout.write('Release config checks passed. Final merged-manifest verification is still required.\n');
