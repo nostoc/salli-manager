@@ -1,0 +1,14 @@
+# Development instructions
+
+- Read `docs/FEATURES.md`, `docs/ARCHITECTURE.md`, `docs/SECURITY.md` and `docs/DEVELOPMENT.md` before changing behavior. Preserve the full product scope while implementing one independently testable feature at a time.
+- The user approved the architecture and roadmap on 17 November 2026. The Phase 1 navigation foundation is implemented; see `docs/DEVELOPMENT.md` for verified checks and remaining gates. Next is native SQLCipher/Keystore/authentication feasibility. Explain proposed changes before acting. Never commit or push without explicit approval.
+- Use React Native with Expo development builds, strict TypeScript, Expo Router, NativeWind, Zustand, SQLCipher, Android Keystore, biometric/device authentication, a local Kotlin SMS module, WorkManager, Jest and GitHub Actions. Recheck maintained versions and SDK compatibility before adding packages.
+- Organize by feature; keep domain calculations and parsers pure, screens thin, persistence behind focused repositories and Android behavior in local native modules. SQLite is the durable source of truth; Zustand is transient UI state.
+- Process all financial data locally. No backend, registration, mandatory cloud service, analytics, ads, tracking or cloud AI. The offline release must omit INTERNET permission and remote updates.
+- Never persist banking credentials, full card numbers, PINs, CVVs or OTPs. Use only necessary masked account identifiers. Treat supplied samples as private context until reviewed; create independently synthetic fixtures instead of copying financial records into code, tests or logs.
+- Encrypt database, SMS queue, sensitive files and backups. Keep keys protected by Android Keystore; fail closed on missing encryption or authentication. Never put financial content or keys in logs, WorkManager payloads, route parameters or unencrypted state persistence.
+- Store money as validated integer minor units with explicit currency. Never use floating-point money or sum currencies without an explicit conversion. Repayments are transfers and never reset budgets. Per-card budgets are independent of credit limits.
+- Preserve provenance and user corrections. Imports must be idempotent; ambiguous SMS/statement matches go to review rather than silently merging or duplicating transactions. Do not infer missing amounts, dates or accounts as facts.
+- Request permissions only when the relevant feature is enabled. Keep manual entry and file import usable when SMS or notification permissions are denied.
+- Test financial calculations, parser success/rejection paths, deduplication and security-critical failures. Jest mocks do not establish native encryption or background reliability; verify those on Android builds/devices.
+- Keep documentation aligned with implemented behavior. Describe changes, checks performed, limitations and unresolved decisions. Do not claim planned features or unrun tests work.
